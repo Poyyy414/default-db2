@@ -3,14 +3,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const register = async (req, res) => {
-  const { fullname, username, password } = req.body;   
+  const { fullname, username, password } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [rows] = await pool.query('INSERT INTO users (fullname, username, password) VALUES (?, ?, ?)', [fullname, username, hashedPassword]);
+    const [rows] = await pool.query(
+      'INSERT INTO users (fullname, username, password) VALUES (?, ?, ?)',
+      [fullname, username, hashedPassword]
+    );
 
     res.status(201).json({ message: 'You are successfully registered!!' });
   } catch (err) {
+    console.error('Register Error:', err); // Log the actual error
     res.status(500).json({ error: err.message });
   }
 };
@@ -19,7 +23,7 @@ const login = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE username =?', [username]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
 
     if (rows.length === 0) {
       return res.status(400).json({ error: 'Login Error!!' });
@@ -32,12 +36,20 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Login Error!!' });
     }
 
-    const token = jwt.sign({ user_id: user.user_id, username: user.username, },process.env.JWT_SECRET,{ expiresIn: process.env.JWT_ACCESS_EXPIRATION_TIME });
+    const token = jwt.sign(
+      {
+        user_id: user.user_id,
+        username: user.username,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_ACCESS_EXPIRATION_TIME,
+      }
+    );
 
     res.json({ token });
-
   } catch (err) {
-    
+    console.error('Login Error:', err); // Log the actual error
     res.status(500).json({ error: err.message });
   }
 };
